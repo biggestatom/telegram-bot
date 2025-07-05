@@ -7,8 +7,9 @@ from telegram.ext import (
     ContextTypes,
     filters
 )
-
 import os
+import sys
+import asyncio
 
 BOT_TOKEN = os.getenv('BOT_TOKEN')
 if not BOT_TOKEN:
@@ -168,18 +169,18 @@ async def handle_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         await update.message.reply_text("✅ Perfect, Your message has been received. I will get back to you shortly.")
 
-# Main runner
-if __name__ == "__main__":
-    import asyncio
-    import sys
-
-    # For Windows event loop fix
+def main():
+    # Windows event loop fix
     if sys.platform.startswith("win"):
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
     app = ApplicationBuilder().token(BOT_TOKEN).build()
+
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_buttons))
 
     print("✅ Bot is running...")
     app.run_polling()
+
+if __name__ == "__main__":
+    main()
