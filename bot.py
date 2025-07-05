@@ -8,7 +8,12 @@ from telegram.ext import (
     filters
 )
 
-BOT_TOKEN = '7226608912:AAEBQd3YSlz7mKtB4pv_N19kBbMaVciQO6Y'
+import os
+
+BOT_TOKEN = os.getenv('BOT_TOKEN')
+if not BOT_TOKEN:
+    raise ValueError("No BOT_TOKEN found in environment variables. Please set it before running the bot.")
+
 ADMIN_ID = 7168112250  # Replace with your Telegram user ID
 
 # Track user state
