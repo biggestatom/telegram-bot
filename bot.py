@@ -1,7 +1,4 @@
 import logging
-import os
-import sys
-import asyncio
 from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import (
     ApplicationBuilder,
@@ -10,6 +7,9 @@ from telegram.ext import (
     ContextTypes,
     filters
 )
+import os
+import sys
+import asyncio
 
 BOT_TOKEN = os.getenv('BOT_TOKEN')
 if not BOT_TOKEN:
@@ -17,10 +17,13 @@ if not BOT_TOKEN:
 
 ADMIN_ID = 7168112250  # Replace with your Telegram user ID
 
+# Track user state
 user_states = {}
 
+# Set up logging
 logging.basicConfig(format="%(asctime)s - %(levelname)s - %(message)s", level=logging.INFO)
 
+# /start command
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     user_states[user_id] = "STARTED"
@@ -35,6 +38,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=reply_markup
     )
 
+# Main button/message handler
 async def handle_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     user_input = update.message.text.strip().lower()
@@ -65,6 +69,7 @@ async def handle_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
 
+    # If user hasn’t clicked “Lets Deal” yet
     if state != "DEAL_SELECTED":
         logging.info("Blocked message — user hasn't clicked 'Lets Deal' yet.")
         await update.message.reply_text(
@@ -72,7 +77,8 @@ async def handle_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
 
-    # Handle various options (services, websites, etc.)
+    # --- Handle Options Below ---
+
     if "services" in user_input:
         await update.message.reply_text(
             "📩 Explain the service you need in full now and I will get back to you shortly, "
@@ -156,6 +162,7 @@ async def handle_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("🔁 Bot restarted. Tap 'Lets Deal' to begin again.", reply_markup=reply_markup)
 
     else:
+        # Unrecognized input (after "Lets Deal") — forward to admin
         await context.bot.send_message(
             chat_id=ADMIN_ID,
             text=f"📩 Message from {display_name} (@{username or 'unknown'}):\n\n{update.message.text}"
@@ -163,16 +170,20 @@ async def handle_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("✅ Perfect, Your message has been received. I will get back to you shortly.")
 
 def main():
+    # Windows event loop fix
     if sys.platform.startswith("win"):
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
-    app = ApplicationBuilder().token(BOT_TOKEN).build()
+    try:
+        app = ApplicationBuilder().token(BOT_TOKEN).build()
+        app.add_handler(CommandHandler("start", start))
+        app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_buttons))
 
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_buttons))
-
-    print("✅ Bot is running...")
-    app.run_polling()
+        print("✅ Bot is running...")
+        app.run_polling()
+    except Exception as e:
+        print("🚨 Error during startup:", e)
+        raise
 
 if __name__ == "__main__":
     main()
